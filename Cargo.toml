@@ -1,0 +1,15 @@
+[package]
+name = "rust_search_grade"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.28", features = ["derive"] }
+dialoguer = "0.11.0"
+reqwest = "0.12.12"
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.138"
+tokio = {version = "1.43.0", features = ["macros", "rt", "rt-multi-thread"] }
+unicode-width = "0.2.0"
+colored = "3.0.0"
+indicatif = "0.17.11"
