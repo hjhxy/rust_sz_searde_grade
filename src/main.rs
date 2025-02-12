@@ -1,6 +1,8 @@
 mod grade;
 
+use std::io;
 use clap::Parser;
+use colored::Colorize;
 use dialoguer::{Input, MultiSelect, Select};
 use dialoguer::theme::ColorfulTheme;
 use serde::{Serialize, Deserialize};
@@ -46,7 +48,8 @@ async fn interactive_selection(){
             search_grade(user_input).await;
         },
         _=>{
-            println!("{:?}模版当前仍在开发中，请重新选择", options[selection]);
+            println!("{}", format!("{:?}模版当前仍在开发中，按任意键退出后重新选择", options[selection]).yellow());
         }
     }
+    io::stdin().read_line(&mut String::new()).unwrap();
 }

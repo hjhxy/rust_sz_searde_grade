@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::error::Error;
+use std::io;
 use tokio::time::{sleep, Duration};
 use reqwest::{header, Client};
 use serde_json::json;
@@ -104,8 +106,20 @@ pub async fn search_grade(cookie: String){
         .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
         .form(&form_data)
         .send().await;
-    let text = response.expect("请求失败，稍后再试").text().await.unwrap();
-    let data = serde_json::from_str::<ResponseData>(&text).unwrap();
+    let text = match response.expect("请求失败，稍后重试").text().await {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!("请求失败：{}", e);
+            return; // 或者其他处理逻辑
+        }
+    };
+    let data = match serde_json::from_str::<ResponseData>(&text) {
+        Ok(d) => d,
+        Err(e) => {
+            eprintln!("JSON解析失败");
+            return;
+        }
+    };
     let total_size = data.datas.xscjcx.totalSize;
     let courses = data.datas.xscjcx.rows.iter().map(|row| {
         let class_name = row.KCMC.clone().unwrap_or_else(|| "暂无".to_string());
@@ -135,4 +149,6 @@ pub async fn search_grade(cookie: String){
     for course in courses {
         println!("{}", course.join(" | "));
     }
+    println!("程序查询成功，按任意键退出~");
+    io::stdin().read_line(&mut String::new()).unwrap();
 }
