@@ -90,6 +90,8 @@ pub async fn search_grade(cookie: String){
     form_data.insert("pageSize", "10".to_string());
     form_data.insert("pageNumber", "1".to_string());
 
+    println!("\n");
+
     println!("🚗开始查询成绩...稍等☕️");
     let pb = ProgressBar::new(100);
     pb.set_style(ProgressStyle::default_bar()
@@ -136,6 +138,9 @@ pub async fn search_grade(cookie: String){
             return;
         }
     };
+
+    pb.finish_with_message("✅ 查询成功！");
+
     let total_size = data.datas.xscjcx.totalSize;
     let courses = data.datas.xscjcx.rows.iter().map(|row| {
         let class_name = row.KCMC.clone().unwrap_or_else(|| "暂无".to_string());
