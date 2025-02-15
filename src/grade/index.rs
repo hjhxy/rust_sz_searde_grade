@@ -2,17 +2,24 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::io;
 use tokio::time::{sleep, Duration};
-use reqwest::{header, Client};
+use reqwest::{header, Client, Response};
 use serde_json::json;
 use serde::Deserialize;
-use crate::grade::util::pad_str;
+use crate::grade::util::*;
 use colored::*;
 use indicatif::{ProgressBar, ProgressStyle};
+use regex::Regex;
 
 pub async fn search_grade(cookie: String){
-    if cookie.is_empty(){
-        panic!("cookie is empty");
+    match validate_cookie(&cookie) {
+        Ok(_) => {}
+        Err(e) => {
+            println!("❌ {}", e);
+            before_exit();
+            return;
+        }
     }
+
     #[derive(Debug, Deserialize)]
     struct ResponseData {
         datas: Datas,
@@ -70,6 +77,7 @@ pub async fn search_grade(cookie: String){
         code: i32,
         totalPage: u32,
     }
+
     let mut form_data = HashMap::new();
     form_data.insert("querySetting", json!([
         {
@@ -88,16 +96,11 @@ pub async fn search_grade(cookie: String){
         .template("[{bar:40.green/white}] {pos:>3}/{len} {msg}")
         .unwrap()
         .progress_chars("█>-"));
-    let mut sum = 0;
     for i in 1..=100 {
-        sum += i; // 计算累加
         pb.set_position(i);
-        pb.set_message(format!("查询进度: {}", sum));
+        // pb.set_message(format!("查询进度: {}%", i));
         sleep(Duration::from_millis(5)).await;
     }
-    pb.finish_with_message("✅ 查询成功！");
-
-    println!("\n");
 
     let client = Client::new();
     let response = client.
@@ -106,17 +109,30 @@ pub async fn search_grade(cookie: String){
         .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
         .form(&form_data)
         .send().await;
-    let text = match response.expect("请求失败，稍后重试").text().await {
+
+    let response = match response {
+        Ok(r) => r,
+        Err(e) => {
+            pb.finish_with_message("查询失败！");
+            before_exit();
+            return;
+        }
+    };
+
+    let text = match response.text().await {
         Ok(t) => t,
         Err(e) => {
-            eprintln!("请求失败：{}", e);
+            pb.finish_with_message("❌ 查询失败！获取数据失败！");
+            before_exit();
             return; // 或者其他处理逻辑
         }
     };
+
     let data = match serde_json::from_str::<ResponseData>(&text) {
         Ok(d) => d,
         Err(e) => {
-            eprintln!("JSON解析失败");
+            pb.finish_with_message("❌ 查询失败！JSON解析失败！");
+            before_exit();
             return;
         }
     };
@@ -143,12 +159,13 @@ pub async fn search_grade(cookie: String){
         pad_str("任课教师", 16),
         pad_str("学分", 10),
     ];
+
+    println!("\n");
     println!("📑总课程数🖊：{}门", total_size);
     println!("📑已出成绩🧑‍🏫：{}门", courses.len());
     println!("{}", res_title.join(" | ").bold().cyan());
     for course in courses {
         println!("{}", course.join(" | "));
     }
-    println!("程序查询成功，按任意键退出~");
-    io::stdin().read_line(&mut String::new()).unwrap();
+    before_exit();
 }

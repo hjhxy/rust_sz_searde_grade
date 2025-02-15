@@ -13,3 +13,4 @@ tokio = {version = "1.43.0", features = ["macros", "rt", "rt-multi-thread"] }
 unicode-width = "0.2.0"
 colored = "3.0.0"
 indicatif = "0.17.11"
+regex = "1.11.1"
